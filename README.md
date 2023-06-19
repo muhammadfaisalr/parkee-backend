@@ -52,7 +52,6 @@ Response :
 Request: 
 ```
 {
-    "parkingSlip":"B1108AJK",
     "vehicleNumber":"B1108AJK",
     "vehicleType":1,
     "status":1
