@@ -11,7 +11,7 @@ import java.util.List;
 
 @Repository
 public interface ParkeeRepository extends JpaRepository<ParkeeEntity, Long>  {
-    @Query(value = "SELECT * FROM t_parkee", nativeQuery = true)
+    @Query(value = "SELECT * FROM t_parkee ORDER BY id DESC", nativeQuery = true)
     public List<ParkeeEntity> getParkees();
 
     @Query(value = "SELECT * FROM t_parkee WHERE vehicle_number = :vehicleNumber AND status IN ('1', '3')", nativeQuery = true)
