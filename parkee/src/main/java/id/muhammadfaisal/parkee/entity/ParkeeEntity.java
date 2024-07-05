@@ -44,7 +44,7 @@ public class ParkeeEntity {
     private BigInteger totalAmount;
 
     @Column(name = "status")
-    private Integer status;
+    private String status;
 
     public BigInteger getId() {
         return id;
@@ -134,11 +134,11 @@ public class ParkeeEntity {
         this.totalAmount = totalAmount;
     }
 
-    public Integer getStatus() {
+    public String  getStatus() {
         return status;
     }
 
-    public void setStatus(Integer status) {
+    public void setStatus(String  status) {
         this.status = status;
     }
 }

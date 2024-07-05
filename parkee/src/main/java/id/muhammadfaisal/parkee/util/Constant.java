@@ -18,9 +18,9 @@ public class Constant {
     }
 
     public static class PaymentStatus {
-        public static final int PAID = 2;
-        public static final int PENDING = 3;
-        public static final int NOT_PAID = 1;
+        public static final String PAID = "2";
+        public static final String PENDING = "3";
+        public static final String NOT_PAID = "1";
     }
     public static class PaymentStatusText {
         public static final String PAID = "Telah Dibayar";

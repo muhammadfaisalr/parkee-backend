@@ -21,6 +21,7 @@ import java.math.BigInteger;
 import java.time.Duration;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 
@@ -43,15 +44,28 @@ public class ParkeeController {
 
         try {
             String vehicleNumberTrim = parkeeTrxRequest.getVehicleNumber().trim();
-            ParkeeEntity currentParkee = this.parkeeRepository.getParkee(vehicleNumberTrim);
+            List<ParkeeEntity> currentParkee = this.parkeeRepository.getParkee(vehicleNumberTrim);
 
-            if (currentParkee == null) {
+            boolean isCanProcessed = true;
+
+            if (currentParkee.isEmpty()) {
+                isCanProcessed = false;
+            }
+
+            for (ParkeeEntity parkeeEntity : currentParkee) {
+                if (!parkeeEntity.getStatus().equals("2")) {
+                    isCanProcessed = false;
+                    break;
+                }
+            }
+
+            if (isCanProcessed) {
                 //Process Check In Parking
                 ParkeeEntity parkeeEntity = new ParkeeEntity();
                 parkeeEntity.setParkingSlip(parkeeTrxRequest.getVehicleNumber());
                 parkeeEntity.setVehicleType(parkeeTrxRequest.getVehicleType());
                 parkeeEntity.setVehicleNumber(parkeeTrxRequest.getVehicleNumber());
-                parkeeEntity.setStatus(parkeeTrxRequest.getStatus());
+                parkeeEntity.setStatus(Constant.PaymentStatus.NOT_PAID);
                 parkeeEntity.setCheckInTime(String.valueOf(LocalDateTime.now()));
 
                 BigInteger price = this.vehicleTypeRepository.getPricePerHour(parkeeTrxRequest.getVehicleType());
@@ -80,14 +94,15 @@ public class ParkeeController {
     @PostMapping("/inquiry-transaction")
     public ResponseEntity<BaseResponse> inquiryTransaction(@Validated @RequestBody ParkeeInqRequest parkeeInqRequest) {
         BaseResponse baseResponse = new BaseResponse();
-        ParkeeEntity parkeeEntity = this.parkeeRepository.getParkeeNotPaid(parkeeInqRequest.getVehicleNumber());
 
+        List<ParkeeEntity> parkeeEntities = this.parkeeRepository.getParkeeNotPaid(parkeeInqRequest.getVehicleNumber());
         try {
-            if (parkeeEntity == null) {
+            if (parkeeEntities.isEmpty()) {
                 // No Vehicle Found
                 baseResponse.setCode(Constant.RC.DATA_NOT_F0UND);
                 baseResponse.setMessage(Constant.RM.CANNOT_PROCESS_INQUIRY);
             } else {
+                ParkeeEntity parkeeEntity = parkeeEntities.get(parkeeEntities.size() - 1);
                 BigInteger pricePerHour = this.vehicleTypeRepository.getPricePerHour(parkeeEntity.getVehicleType());
                 LocalDateTime now = LocalDateTime.now();
                 String checkoutTime = String.valueOf(now);
@@ -101,7 +116,7 @@ public class ParkeeController {
                 BigInteger priceByHour = pricePerHour.multiply(BigInteger.valueOf(totalHour));
                 parkeeEntity.setTotalAmount(priceByHour);
 
-                this.parkeeRepository.updateStatusAndCheckoutTime(String.valueOf(Constant.PaymentStatus.PENDING), checkoutTime, parkeeInqRequest.getVehicleNumber());
+                this.parkeeRepository.updateStatusAndCheckoutTime(Constant.PaymentStatus.PENDING, checkoutTime, parkeeInqRequest.getVehicleNumber());
                 baseResponse.setCode(Constant.RC.SUCCESS);
                 baseResponse.setMessage(Constant.RM.DATA_FOUND);
                 baseResponse.setData(parkeeEntity);
@@ -119,15 +134,17 @@ public class ParkeeController {
     @PostMapping("/payment-transaction")
     public ResponseEntity<BaseResponse> paymentTransaction(@Validated @RequestBody ParkeePayRequest parkeePayRequest) {
         BaseResponse baseResponse = new BaseResponse();
-        ParkeeEntity parkeeEntity = this.parkeeRepository.getParkeeNotPaid(parkeePayRequest.getVehicleNumber());
+        List<ParkeeEntity> parkeeEntities = this.parkeeRepository.getParkeeNotPaid(parkeePayRequest.getVehicleNumber());
 
         try {
 
-            if (parkeeEntity == null) {
+            if (parkeeEntities.isEmpty()) {
                 // No Vehicle Found
                 baseResponse.setCode(Constant.RC.DATA_NOT_F0UND);
                 baseResponse.setMessage(Constant.RM.DATA_NOT_FOUND);
             } else {
+                ParkeeEntity parkeeEntity = parkeeEntities.get(parkeeEntities.size() - 1);
+
                 parkeeEntity.setStatus(Constant.PaymentStatus.PAID);
                 parkeeEntity.setPaymentMethod(parkeePayRequest.getPaymentMethod());
 
